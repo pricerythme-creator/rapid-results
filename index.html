@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rapid Results</title>
+<style>
+  :root { --ink:#111; --muted:#777; --line:#cfd3da; --card:#f5f6f8; --up:#2e9e5b; --down:#d64545; --flag:#fff1b8; --accent:#1f4e9c; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 16px; font-family:"Segoe UI",Arial,sans-serif; color:var(--ink); background:#fff; }
+  .wrap { max-width:1000px; margin:0 auto; }
+  .top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  h1 { font-size:24px; font-weight:800; margin:0; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button, .btn { font:inherit; font-size:13px; padding:7px 12px; border:1px solid #999; border-radius:3px; background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  select { font:inherit; font-size:13px; padding:6px; }
+  .bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid #e5e5e5; margin-bottom:20px; }
+  .tabs { display:flex; flex-wrap:wrap; }
+  .tab { padding:12px 14px; cursor:pointer; color:#555; font-size:14px; border-bottom:2px solid transparent; }
+  .tab.on { color:var(--ink); font-weight:600; border-color:var(--ink); }
+  .mode label { margin-left:14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .card { position:relative; background:var(--card); border-radius:4px; padding:12px 14px 14px; font-size:13px; }
+  .meta { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); }
+  .name { font-weight:700; margin:8px 0 10px; font-size:13px; padding-right:14px; }
+  .del { position:absolute; top:20px; right:8px; border:none; background:none; color:#aaa; font-size:15px; padding:0 4px; cursor:pointer; }
+  .del:hover { color:var(--down); }
+  table { width:100%; border-collapse:collapse; }
+  th { font-weight:400; color:#555; font-size:11px; text-align:right; padding:6px 0; border-top:1px solid #333; border-bottom:1px solid var(--line); }
+  th:first-child, td:first-child { text-align:left; }
+  td { text-align:right; padding:5px 0; }
+  .up { color:var(--up); } .down { color:var(--down); } .flat { color:#444; font-size:11px; }
+  .basis { display:inline-block; margin-top:10px; font-size:9px; border:1px solid #999; border-radius:2px; padding:2px 5px; background:#fff; }
+  .empty { color:var(--muted); padding:30px 0; }
+  .foot { margin-top:28px; font-size:12px; color:var(--muted); text-align:center; }
+
+  /* Adding from snapshot images */
+  .drop { display:none; position:fixed; inset:0; background:rgba(31,78,156,.12); border:3px dashed var(--accent); z-index:10; align-items:center; justify-content:center; font-size:20px; font-weight:600; color:var(--accent); }
+  .drop.on { display:flex; }
+  .status { font-size:12px; color:var(--muted); }
+  .review { border:1px solid #d8dce3; border-radius:4px; padding:14px; margin-bottom:22px; background:#fcfcfd; }
+  .review h2 { font-size:15px; margin:0 0 4px; }
+  .review .hint { font-size:12px; color:#555; margin:0 0 12px; }
+  .item { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:16px; padding:12px 0; border-top:1px solid #e5e5e5; }
+  .item img { width:100%; border:1px solid #ddd; border-radius:3px; cursor:zoom-in; }
+  .form .row2 { display:grid; grid-template-columns:2fr 1fr; gap:8px; margin-bottom:8px; }
+  .form .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+  .form label { display:block; font-size:11px; color:#555; }
+  .form input[type=text], .form select { width:100%; font:inherit; font-size:13px; padding:5px 6px; border:1px solid #bbb; border-radius:3px; }
+  .vals th { text-align:center; border-top:none; }
+  .vals td { padding:3px 2px; }
+  .vals input { width:100%; min-width:64px; font:inherit; font-size:13px; padding:4px 5px; text-align:right; border:1px solid #bbb; border-radius:3px; }
+  .vals input.flag { background:var(--flag); border-color:#d9a400; }
+  .vals input.unv { background:#e8f0fd; border-color:#7aa2e3; }
+  .problems.info { color:#2f5fae; }
+  .vals .g { font-size:11px; white-space:nowrap; padding-left:6px; text-align:right; }
+  .problems { color:var(--down); font-size:12px; margin:8px 0 0; }
+  .itembtns { display:flex; gap:8px; margin-top:12px; }
+  .reading { color:var(--muted); font-size:13px; padding:20px 0; }
+  @media (max-width:640px) { .item { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="drop" id="drop">Drop snapshot images to add them</div>
+<div class="wrap">
+  <div class="top">
+    <h1>RAPID RESULTS</h1>
+    <div class="actions">
+      <select id="quarter" title="Quarter"></select>
+      <label class="btn">Add snapshots<input type="file" id="files" accept="image/*" multiple hidden></label>
+      <button id="save" title="Download results_data.js to replace the one in this folder">Save data file</button>
+    </div>
+  </div>
+  <div id="review"></div>
+  <div class="bar">
+    <div class="tabs" id="tabs"></div>
+    <div class="mode">
+      <label><input type="radio" name="mode" value="qoq"> QoQ</label>
+      <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="foot">price rythm &nbsp;|&nbsp; Prepared By : Prasad Rao</div>
+</div>
+
+<script src="results_data.js"></script>
+<script>
+const ROWS = [["Sales","sales"],["PBT","pbt"],["Net Profit","np"]];
+const TABS = ["Best Performer","Worst Performer","Positive Turnaround","Negative Turnaround"];
+const STORE = "priceRythm.rapidResults.v1";
+let tab = 0, mode = "yoy", quarter = null;
+let queue = [];   // snapshot images waiting for review
+
+// ---------- data ----------
+const keyOf = d => `${d.name}|${d.periods[2]}|${d.basis}`.toLowerCase();
+let local = (() => {
+  try { return JSON.parse(localStorage.getItem(STORE)) || { items:[], removed:[] }; }
+  catch (e) { return { items:[], removed:[] }; }
+})();
+const loadLocal = () => local;
+function saveLocal(s) { local = s; try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
+function allData() {
+  const s = loadLocal(), map = new Map();
+  (window.RESULTS_DATA || []).forEach(d => map.set(keyOf(d), d));
+  s.items.forEach(d => map.set(keyOf(d), d));
+  s.removed.forEach(k => map.delete(k));
+  return [...map.values()];
+}
+function addEntry(d) {
+  const s = loadLocal(), k = keyOf(d);
+  s.items = s.items.filter(x => keyOf(x) !== k); s.items.push(d);
+  s.removed = s.removed.filter(x => x !== k);
+  saveLocal(s);
+}
+function removeEntry(k) {
+  const s = loadLocal();
+  s.items = s.items.filter(x => keyOf(x) !== k);
+  if (!s.removed.includes(k)) s.removed.push(k);
+  saveLocal(s);
+}
+function qRank(q) { const m = /Q(\d)\s*FY(\d{2})/.exec(q || ""); return m ? +m[2] * 4 + +m[1] : 0; }
+
+// ---------- grid ----------
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const fmt = v => v.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function growth(prev, cur) {
+  if (prev < 0 && cur >= 0) return { kind:"pos", text:"Loss → Profit" };
+  if (prev >= 0 && cur < 0) return { kind:"neg", text:"Profit → Loss" };
+  if (prev === 0) return { kind:"na", text:"–" };
+  const p = (cur - prev) / Math.abs(prev) * 100;
+  return { kind:"num", val:p, text:(p >= 0 ? "+" : "") + p.toFixed(1) + "%" };
+}
+const gcls = g => g.kind === "num" ? (g.val >= 0 ? "up" : "down") : g.kind === "pos" ? "up" : g.kind === "neg" ? "down" : "flat";
+const base = () => mode === "yoy" ? 0 : 1;
+
+function bucket(d) {
+  const g = growth(d.np[base()], d.np[2]);
+  if (g.kind === "pos") return 2;
+  if (g.kind === "neg") return 3;
+  if (g.kind === "num") return g.val >= 0 ? 0 : 1;
+  return -1;
+}
+
+function card(d) {
+  const b = base();
+  const rows = ROWS.map(([label,key]) => {
+    const g = growth(d[key][b], d[key][2]);
+    return `<tr><td>${label}</td><td>${fmt(d[key][2])}</td><td>${fmt(d[key][b])}</td><td class="${gcls(g)}">${g.text}</td></tr>`;
+  }).join("");
+  return `<div class="card">
+    <button class="del" data-k="${esc(keyOf(d))}" title="Remove">×</button>
+    <div class="meta"><span>${esc(d.date)}</span><span>Rs.Cr.</span></div>
+    <div class="name">${esc(d.name)}</div>
+    <table><tr><th></th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
+    <span class="basis">${esc(d.basis)}</span></div>`;
+}
+
+function render() {
+  const data = allData();
+  const qs = [...new Set(data.map(d => d.periods[2]))].sort((a,z) => qRank(z) - qRank(a));
+  if (!qs.includes(quarter)) quarter = qs[0] || null;
+  const qsel = document.getElementById("quarter");
+  qsel.innerHTML = qs.map(q => `<option${q === quarter ? " selected" : ""}>${esc(q)}</option>`).join("");
+  qsel.style.display = qs.length > 1 ? "" : "none";
+
+  document.getElementById("tabs").innerHTML =
+    TABS.map((t,i) => `<div class="tab${i===tab?" on":""}" data-i="${i}">${t}</div>`).join("");
+  const b = base();
+  let list = data.filter(d => d.periods[2] === quarter && bucket(d) === tab);
+  if (tab < 2) list.sort((x,y) => {
+    const gx = growth(x.np[b], x.np[2]).val, gy = growth(y.np[b], y.np[2]).val;
+    return tab === 0 ? gy - gx : gx - gy;
+  });
+  document.getElementById("grid").innerHTML =
+    list.length ? list.map(card).join("") : `<div class="empty">No companies in this list.</div>`;
+}
+
+// ---------- reading snapshot images ----------
+let libs = null;
+function loadScript(src) {
+  return new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = ok; s.onerror = () => fail(Error("Missing file: " + src));
+    document.head.appendChild(s);
+  });
+}
+function loadLibs() {
+  if (!libs) libs = (async () => {
+    for (const f of ["lib/tesseract-core.js", "lib/eng-data.js", "lib/parser.js", "lib/ocr.js"]) await loadScript(f);
+    await window.SnapshotOCR.init();
+  })();
+  return libs;
+}
+
+function addFiles(files) {
+  [...files].filter(f => f.type.startsWith("image/")).forEach(f =>
+    queue.push({ id: Math.random().toString(36).slice(2), file: f, url: URL.createObjectURL(f), status: "waiting" }));
+  renderReview();
+  processQueue();
+}
+
+let busy = false;
+async function processQueue() {
+  if (busy) return;
+  busy = true;
+  try {
+    await loadLibs();
+  } catch (e) {
+    queue.filter(q => q.status === "waiting").forEach(q => { q.status = "error"; q.error = "Could not start the reader: " + e.message; });
+    busy = false; libs = null; renderReview(); return;
+  }
+  let q;
+  while ((q = queue.find(x => x.status === "waiting"))) {
+    q.status = "reading"; renderReview();
+    await new Promise(r => setTimeout(r, 30)); // let the page repaint before the engine runs
+    try {
+      const bytes = new Uint8Array(await q.file.arrayBuffer());
+      const r = await window.SnapshotOCR.read(bytes);
+      q.data = window.SnapshotParser.parseSnapshot(r.words, r.text, q.file.name);
+      q.status = "ready";
+    } catch (e) { q.status = "error"; q.error = e.message; }
+    renderReview();
+  }
+  busy = false;
+}
+
+function reviewItem(q) {
+  const img = `<div><img src="${q.url}" alt="${esc(q.file.name)}" data-open="${q.url}"></div>`;
+  if (q.status === "waiting" || q.status === "reading")
+    return `<div class="item">${img}<div class="reading">${q.status === "reading" ? "Reading numbers from the image…" : "Waiting…"}<br><span class="status">${libs ? "" : "First image loads the reader, a few seconds."}</span></div></div>`;
+  if (q.status === "error")
+    return `<div class="item">${img}<div><p class="problems">${esc(q.error)}</p><div class="itembtns"><button data-skip="${q.id}">Remove</button></div></div></div>`;
+  const d = q.data;
+  const per = d.periods || ["", "", ""];
+  const val = (k, i) => {
+    const v = d[k] ? d[k][i] : "";
+    const flag = d.check && d.check[k] ? d.check[k][i] : "";
+    const cls = flag === "m" ? "flag" : flag === "u" ? "unv" : "";
+    const tip = flag === "m" ? "Does not match the YoY/QoQ printed on the image" : flag === "u" ? "Only a Loss/Profit label to check against: compare with the image" : "";
+    return `<td><input class="${cls}" data-f="${k}${i}" value="${v === "" ? "" : v.toFixed(2)}" ${tip ? `title="${tip}"` : ""}></td>`;
+  };
+  const rows = ROWS.map(([label, k]) =>
+    `<tr><td>${label}</td>${val(k,0)}${val(k,1)}${val(k,2)}<td class="g" data-g="${k}"></td></tr>`).join("");
+  const flags = d.check ? Object.values(d.check).flat() : [];
+  const mism = flags.includes("m"), unv = flags.includes("u");
+  return `<div class="item" data-id="${q.id}">${img}<div class="form">
+    <div class="row2">
+      <div><label>Company name</label><input type="text" data-f="name" value="${esc(d.name)}"></div>
+      <div><label>Basis</label><select data-f="basis">
+        <option${d.basis === "Standalone" ? " selected" : ""}>Standalone</option>
+        <option${d.basis === "Consolidated" ? " selected" : ""}>Consolidated</option></select></div>
+    </div>
+    <div class="row3">
+      <div><label>Result date</label><input type="text" data-f="date" value="${esc(d.date)}" placeholder="14 Oct 2026"></div>
+      <div><label>Quarter</label><input type="text" data-f="q" value="${esc(d.q)}" placeholder="Q2 FY27"></div>
+      <div><label>&nbsp;</label></div>
+    </div>
+    <table class="vals"><tr><th></th><th data-p="0">${esc(per[0])}</th><th data-p="1">${esc(per[1])}</th><th data-p="2">${esc(per[2])}</th><th>YoY / QoQ</th></tr>${rows}</table>
+    ${d.problems.length ? `<p class="problems">${d.problems.map(esc).join("<br>")}</p>` : ""}
+    ${mism ? `<p class="problems">Yellow: the YoY/QoQ printed on the image doesn't match these numbers. Either the value was misread or the image has a wrong figure.</p>` : ""}
+    ${unv ? `<p class="problems info">Blue: the image shows only Loss → Profit here, so there was no % to confirm the value. Compare it with the image.</p>` : ""}
+    <div class="itembtns"><button class="primary" data-add="${q.id}">Add to results</button><button data-skip="${q.id}">Skip</button></div>
+  </div></div>`;
+}
+
+function renderReview() {
+  const box = document.getElementById("review");
+  if (!queue.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="review"><h2>Check before adding</h2>
+    <p class="hint">Numbers were read from the image. Compare each value with the image, then add.</p>
+    ${queue.map(reviewItem).join("")}</div>`;
+  box.querySelectorAll(".item[data-id]").forEach(updateItemGrowth);
+}
+
+function prevQ(q, back) {
+  const m = /Q\s*([1-4])\s*FY\s*(\d{2})/i.exec(q || "");
+  if (!m) return "";
+  let n = +m[1] - back, f = +m[2];
+  while (n < 1) { n += 4; f -= 1; }
+  return `Q${n} FY${String(f).padStart(2, "0")}`;
+}
+function readItem(el) {
+  const get = f => el.querySelector(`[data-f="${f}"]`).value.trim();
+  const num = f => { const v = parseFloat(get(f).replace(/[,\s₹]/g, "")); return isFinite(v) ? v : NaN; };
+  const qm = /Q\s*([1-4])\s*FY\s*(\d{2})/i.exec(get("q"));
+  const q = qm ? `Q${qm[1]} FY${qm[2]}` : "";
+  const d = { name: get("name"), date: get("date"), basis: get("basis"), periods: [prevQ(q, 4), prevQ(q, 1), q] };
+  ROWS.forEach(([, k]) => d[k] = [0, 1, 2].map(i => num(k + i)));
+  return d;
+}
+function updateItemGrowth(el) {
+  const d = readItem(el);
+  d.periods.forEach((p, i) => { const th = el.querySelector(`[data-p="${i}"]`); if (th) th.textContent = p; });
+  ROWS.forEach(([, k]) => {
+    const cell = el.querySelector(`[data-g="${k}"]`);
+    const v = d[k];
+    if (v.some(isNaN)) { cell.innerHTML = ""; return; }
+    const y = growth(v[0], v[2]), q = growth(v[1], v[2]);
+    cell.innerHTML = `<span class="${gcls(y)}">${y.text}</span> / <span class="${gcls(q)}">${q.text}</span>`;
+  });
+}
+
+function addFromReview(id) {
+  const el = document.querySelector(`.item[data-id="${id}"]`);
+  const d = readItem(el);
+  const bad = [];
+  if (!d.name) bad.push("Company name is empty.");
+  if (!d.periods[2]) bad.push("Quarter should look like Q2 FY27.");
+  ROWS.forEach(([label, k]) => { if (d[k].some(isNaN)) bad.push(`${label} has an empty or invalid value.`); });
+  if (bad.length) { alert(bad.join("\n")); return; }
+  addEntry(d);
+  dropFromQueue(id);
+  quarter = d.periods[2];
+  render();
+}
+function dropFromQueue(id) {
+  const q = queue.find(x => x.id === id);
+  if (q) URL.revokeObjectURL(q.url);
+  queue = queue.filter(x => x.id !== id);
+  renderReview();
+}
+
+// ---------- save data file ----------
+function saveFile() {
+  const data = allData().sort((a, z) => qRank(z.periods[2]) - qRank(a.periods[2]));
+  const text = "// Rapid Results data (₹ Crore). Saved from the page with \"Save data file\".\n" +
+    "// periods: [YoY base, QoQ base, Current]   values in the same order.\n" +
+    "window.RESULTS_DATA = [\n" + data.map(d => "  " + JSON.stringify({
+      name: d.name, date: d.date, basis: d.basis, periods: d.periods, sales: d.sales, pbt: d.pbt, np: d.np })).join(",\n") + "\n];\n";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+  a.download = "results_data.js";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------- events ----------
+document.getElementById("tabs").addEventListener("click", e => {
+  if (e.target.dataset.i) { tab = +e.target.dataset.i; render(); }
+});
+document.querySelectorAll("input[name=mode]").forEach(r =>
+  r.addEventListener("change", e => { mode = e.target.value; render(); }));
+document.getElementById("quarter").addEventListener("change", e => { quarter = e.target.value; render(); });
+document.getElementById("files").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+document.getElementById("save").addEventListener("click", saveFile);
+document.getElementById("grid").addEventListener("click", e => {
+  const k = e.target.dataset.k;
+  if (k && confirm("Remove this company from the results?")) { removeEntry(k); render(); }
+});
+const reviewBox = document.getElementById("review");
+reviewBox.addEventListener("click", e => {
+  const t = e.target.dataset;
+  if (t.add) addFromReview(t.add);
+  else if (t.skip) dropFromQueue(t.skip);
+  else if (t.open) window.open(t.open, "_blank");
+});
+reviewBox.addEventListener("input", e => { const el = e.target.closest(".item[data-id]"); if (el) updateItemGrowth(el); });
+
+const drop = document.getElementById("drop");
+let depth = 0;
+window.addEventListener("dragenter", e => { if ([...e.dataTransfer.types].includes("Files")) { depth++; drop.classList.add("on"); } });
+window.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; drop.classList.remove("on"); } });
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => { e.preventDefault(); depth = 0; drop.classList.remove("on"); addFiles(e.dataTransfer.files); });
+
+render();
+</script>
+</body>
+</html>
