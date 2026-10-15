@@ -75,7 +75,7 @@
 <div class="drop" id="drop">Drop snapshot images or data lock .txt files</div>
 <div class="wrap">
   <div class="top">
-    <div class="title"><h1>RAPID RESULTS</h1><span class="byline">Prepared By : Prasad Rao</span></div>
+    <div class="title"><h1>RAPID RESULTS<span id="qtitle"></span></h1><span class="byline">Prepared By : Prasad Rao</span></div>
     <div class="actions">
       <select id="quarter" title="Quarter"></select>
       <button id="lockbtn" class="admin-only">Paste data lock</button>
@@ -202,6 +202,8 @@ function render() {
   const qsel = document.getElementById("quarter");
   qsel.innerHTML = qs.map(q => `<option${q === quarter ? " selected" : ""}>${esc(q)}</option>`).join("");
   qsel.style.display = qs.length > 1 ? "" : "none";
+  // Title shows the quarter on screen, e.g. "RAPID RESULTS - Q2 FY2027"
+  document.getElementById("qtitle").textContent = quarter ? " - " + quarter.replace(/FY(\d{2})$/, "FY20$1") : "";
 
   document.getElementById("tabs").innerHTML =
     TABS.map((t,i) => `<div class="tab${i===tab?" on":""}" data-i="${i}">${t}</div>`).join("");
