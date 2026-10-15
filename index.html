@@ -1,7 +1,7 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<!DOCTYPE html>
+<!-- saved from url=(0052)https://pricerythme-creator.github.io/rapid-results/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rapid Results</title>
 <style>
@@ -74,13 +74,13 @@
   <div class="top">
     <h1>RAPID RESULTS</h1>
     <div class="actions">
-      <select id="quarter" title="Quarter"></select>
+      <select id="quarter" title="Quarter" style="display: none;"><option selected="">Q2 FY27</option></select>
       <button id="lockbtn" class="admin-only">Paste data lock</button>
-      <label class="btn admin-only">Add snapshots<input type="file" id="files" accept="image/*,.txt,text/plain" multiple hidden></label>
+      <label class="btn admin-only">Add snapshots<input type="file" id="files" accept="image/*,.txt,text/plain" multiple="" hidden=""></label>
       <button id="save" class="admin-only" title="Download results_data.js to replace the one in this folder">Save data file</button>
     </div>
   </div>
-  <div class="lockbox" id="lockbox" hidden>
+  <div class="lockbox" id="lockbox" hidden="">
     <h2>Paste data lock</h2>
     <p class="hint" style="font-size:12px;color:#555;margin:0">Paste the full output of the Data Lock prompt, from BEGIN VERIFIED DATA LOCK to END. You can paste several companies at once.</p>
     <textarea id="locktext" spellcheck="false"></textarea>
@@ -88,17 +88,112 @@
   </div>
   <div id="review"></div>
   <div class="bar">
-    <div class="tabs" id="tabs"></div>
+    <div class="tabs" id="tabs"><div class="tab on" data-i="0">Best Performer</div><div class="tab" data-i="1">Worst Performer</div><div class="tab" data-i="2">Positive Turnaround</div><div class="tab" data-i="3">Negative Turnaround</div></div>
     <div class="mode">
       <label><input type="radio" name="mode" value="qoq"> QoQ</label>
-      <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
+      <label><input type="radio" name="mode" value="yoy" checked=""> YoY</label>
     </div>
   </div>
-  <div class="grid" id="grid"></div>
+  <div class="grid" id="grid"><div class="card">
+    <button class="del admin-only" data-k="mudra financial services limited|q2 fy27|standalone" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Mudra Financial Services Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>0.29</td><td>0.19</td><td class="up">+53.4%</td></tr><tr><td>PBT</td><td>0.54</td><td>0.02</td><td class="up">+2874.9%</td></tr><tr><td>Net Profit</td><td>0.48</td><td>0.02</td><td class="up">+2792.2%</td></tr></tbody></table>
+    <span class="basis">Standalone</span></div><div class="card">
+    <button class="del admin-only" data-k="mrpl|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">MRPL</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>35,590.40</td><td>25,953.34</td><td class="up">+37.1%</td></tr><tr><td>PBT</td><td>2,538.80</td><td>963.35</td><td class="up">+163.5%</td></tr><tr><td>Net Profit</td><td>1,900.76</td><td>627.36</td><td class="up">+203.0%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="taril|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">TARIL</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>739.44</td><td>460.03</td><td class="up">+60.7%</td></tr><tr><td>PBT</td><td>109.93</td><td>45.30</td><td class="up">+142.7%</td></tr><tr><td>Net Profit</td><td>79.80</td><td>33.91</td><td class="up">+135.3%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="bhel|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">BHEL</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>9,300.35</td><td>7,511.80</td><td class="up">+23.8%</td></tr><tr><td>PBT</td><td>1,089.07</td><td>499.23</td><td class="up">+118.1%</td></tr><tr><td>Net Profit</td><td>820.94</td><td>374.89</td><td class="up">+118.9%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="bajaj consumer care limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Bajaj Consumer Care Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>332.83</td><td>265.27</td><td class="up">+25.5%</td></tr><tr><td>PBT</td><td>86.76</td><td>51.43</td><td class="up">+68.7%</td></tr><tr><td>Net Profit</td><td>70.15</td><td>42.29</td><td class="up">+65.9%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="groww|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">GROWW</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>1,501.53</td><td>1,018.74</td><td class="up">+47.4%</td></tr><tr><td>PBT</td><td>983.86</td><td>637.68</td><td class="up">+54.3%</td></tr><tr><td>Net Profit</td><td>725.65</td><td>471.34</td><td class="up">+54.0%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="anand rathi share and stock brokers limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Anand Rathi Share and Stock Brokers Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>273.21</td><td>227.20</td><td class="up">+20.3%</td></tr><tr><td>PBT</td><td>56.15</td><td>37.53</td><td class="up">+49.6%</td></tr><tr><td>Net Profit</td><td>41.94</td><td>27.90</td><td class="up">+50.3%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="eimco elecon (india) limited|q2 fy27|standalone" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Eimco Elecon (India) Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>56.80</td><td>33.24</td><td class="up">+70.9%</td></tr><tr><td>PBT</td><td>10.44</td><td>6.89</td><td class="up">+51.5%</td></tr><tr><td>Net Profit</td><td>7.83</td><td>5.35</td><td class="up">+46.4%</td></tr></tbody></table>
+    <span class="basis">Standalone</span></div><div class="card">
+    <button class="del admin-only" data-k="plastiblends india limited|q2 fy27|standalone" title="Remove">×</button>
+    <div class="meta"><span>12 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Plastiblends India Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>228.84</td><td>192.61</td><td class="up">+18.8%</td></tr><tr><td>PBT</td><td>14.53</td><td>10.01</td><td class="up">+45.2%</td></tr><tr><td>Net Profit</td><td>10.65</td><td>7.44</td><td class="up">+43.3%</td></tr></tbody></table>
+    <span class="basis">Standalone</span></div><div class="card">
+    <button class="del admin-only" data-k="swaraj engines limited|q2 fy27|standalone" title="Remove">×</button>
+    <div class="meta"><span>12 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Swaraj Engines Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>635.19</td><td>504.04</td><td class="up">+26.0%</td></tr><tr><td>PBT</td><td>81.38</td><td>66.75</td><td class="up">+21.9%</td></tr><tr><td>Net Profit</td><td>60.57</td><td>49.68</td><td class="up">+21.9%</td></tr></tbody></table>
+    <span class="basis">Standalone</span></div><div class="card">
+    <button class="del admin-only" data-k="hcl technologies limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>12 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">HCL Technologies Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>35,620.00</td><td>31,942.00</td><td class="up">+11.5%</td></tr><tr><td>PBT</td><td>6,467.00</td><td>5,702.00</td><td class="up">+13.4%</td></tr><tr><td>Net Profit</td><td>5,132.00</td><td>4,236.00</td><td class="up">+21.2%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="tcs|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>08 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">TCS</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>731.88</td><td>657.99</td><td class="up">+11.2%</td></tr><tr><td>PBT</td><td>186.38</td><td>160.68</td><td class="up">+16.0%</td></tr><tr><td>Net Profit</td><td>138.84</td><td>120.75</td><td class="up">+15.0%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="g. m. breweries limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>08 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">G. M. Breweries Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>860.62</td><td>717.85</td><td class="up">+19.9%</td></tr><tr><td>PBT</td><td>52.51</td><td>46.63</td><td class="up">+12.6%</td></tr><tr><td>Net Profit</td><td>39.29</td><td>34.89</td><td class="up">+12.6%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="canara bank|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Canara Bank</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>N/D</td><td>N/D</td><td class="flat">N/D</td></tr><tr><td>PBT</td><td>6,985.62</td><td>6,350.54</td><td class="up">+10.0%</td></tr><tr><td>Net Profit</td><td>5,381.59</td><td>4,850.03</td><td class="up">+11.0%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="tata elxsi limited|q2 fy27|standalone" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Tata Elxsi Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>1,055.66</td><td>918.10</td><td class="up">+15.0%</td></tr><tr><td>PBT</td><td>239.10</td><td>214.72</td><td class="up">+11.4%</td></tr><tr><td>Net Profit</td><td>170.30</td><td>154.82</td><td class="up">+10.0%</td></tr></tbody></table>
+    <span class="basis">Standalone</span></div><div class="card">
+    <button class="del admin-only" data-k="elecon engineering company limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Elecon Engineering Company Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>638.94</td><td>578.13</td><td class="up">+10.0%</td></tr><tr><td>PBT</td><td>124.76</td><td>112.99</td><td class="up">+10.4%</td></tr><tr><td>Net Profit</td><td>96.35</td><td>87.72</td><td class="up">+9.8%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="dmart|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>10 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">DMART</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>19,644.01</td><td>16,676.30</td><td class="up">+17.8%</td></tr><tr><td>PBT</td><td>1,024.84</td><td>944.79</td><td class="up">+8.5%</td></tr><tr><td>Net Profit</td><td>743.57</td><td>685.01</td><td class="up">+8.5%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="den|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>13 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">DEN</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>232.56</td><td>241.43</td><td class="down">-3.7%</td></tr><tr><td>PBT</td><td>48.91</td><td>45.98</td><td class="up">+6.4%</td></tr><tr><td>Net Profit</td><td>36.45</td><td>35.16</td><td class="up">+3.7%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div><div class="card">
+    <button class="del admin-only" data-k="tata technologies limited|q2 fy27|consolidated" title="Remove">×</button>
+    <div class="meta"><span>14 Oct 2026</span><span>Rs.Cr.</span></div>
+    <div class="name">Tata Technologies Limited</div>
+    <table><tbody><tr><th></th><th>Q2 FY27</th><th>Q2 FY26</th><th>Growth</th></tr><tr><td>Sales</td><td>1,698.80</td><td>1,323.33</td><td class="up">+28.4%</td></tr><tr><td>PBT</td><td>241.72</td><td>225.87</td><td class="up">+7.0%</td></tr><tr><td>Net Profit</td><td>171.44</td><td>165.50</td><td class="up">+3.6%</td></tr></tbody></table>
+    <span class="basis">Consolidated</span></div></div>
   <div class="foot">price rythm &nbsp;|&nbsp; Prepared By : Prasad Rao</div>
 </div>
 
-<script src="results_data.js"></script>
+<script src="./Rapid Results_files/results_data.js.download"></script>
 <script>
 const ROWS = [["Sales","sales"],["PBT","pbt"],["Net Profit","np"]];
 const TABS = ["Best Performer","Worst Performer","Positive Turnaround","Negative Turnaround"];
@@ -495,5 +590,6 @@ window.addEventListener("drop", e => { e.preventDefault(); depth = 0; drop.class
 
 render();
 </script>
-</body>
-</html>
+
+
+</body></html>
