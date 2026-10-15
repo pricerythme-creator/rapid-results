@@ -25,6 +25,7 @@
   .card { position:relative; background:var(--card); border-radius:4px; padding:12px 14px 14px; font-size:13px; }
   .meta { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); }
   .name { font-weight:700; margin:8px 0 10px; font-size:13px; padding-right:14px; }
+  body:not(.admin) .admin-only { display:none !important; }
   .del { position:absolute; top:20px; right:8px; border:none; background:none; color:#aaa; font-size:15px; padding:0 4px; cursor:pointer; }
   .del:hover { color:var(--down); }
   table { width:100%; border-collapse:collapse; }
@@ -59,19 +60,31 @@
   .problems { color:var(--down); font-size:12px; margin:8px 0 0; }
   .itembtns { display:flex; gap:8px; margin-top:12px; }
   .reading { color:var(--muted); font-size:13px; padding:20px 0; }
+  .lockbox { border:1px solid #d8dce3; border-radius:4px; padding:14px; margin-bottom:22px; background:#fcfcfd; }
+  .lockbox h2 { font-size:15px; margin:0 0 4px; }
+  .lockbox textarea { width:100%; height:220px; font:12px Consolas,monospace; padding:8px; border:1px solid #bbb; border-radius:3px; margin:8px 0; }
+  .audit { font-size:11px; color:#444; background:#f5f6f8; border:1px solid #e1e4ea; border-radius:3px; padding:10px; line-height:1.5; overflow-wrap:anywhere; }
+  .audit b { color:#111; }
   @media (max-width:640px) { .item { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<div class="drop" id="drop">Drop snapshot images to add them</div>
+<div class="drop" id="drop">Drop snapshot images or data lock .txt files</div>
 <div class="wrap">
   <div class="top">
     <h1>RAPID RESULTS</h1>
     <div class="actions">
       <select id="quarter" title="Quarter"></select>
-      <label class="btn">Add snapshots<input type="file" id="files" accept="image/*" multiple hidden></label>
-      <button id="save" title="Download results_data.js to replace the one in this folder">Save data file</button>
+      <button id="lockbtn" class="admin-only">Paste data lock</button>
+      <label class="btn admin-only">Add snapshots<input type="file" id="files" accept="image/*,.txt,text/plain" multiple hidden></label>
+      <button id="save" class="admin-only" title="Download results_data.js to replace the one in this folder">Save data file</button>
     </div>
+  </div>
+  <div class="lockbox" id="lockbox" hidden>
+    <h2>Paste data lock</h2>
+    <p class="hint" style="font-size:12px;color:#555;margin:0">Paste the full output of the Data Lock prompt, from BEGIN VERIFIED DATA LOCK to END. You can paste several companies at once.</p>
+    <textarea id="locktext" spellcheck="false"></textarea>
+    <div class="itembtns" style="margin-top:0"><button class="primary" id="lockread">Read</button><button id="lockcancel">Cancel</button></div>
   </div>
   <div id="review"></div>
   <div class="bar">
@@ -90,6 +103,10 @@
 const ROWS = [["Sales","sales"],["PBT","pbt"],["Net Profit","np"]];
 const TABS = ["Best Performer","Worst Performer","Positive Turnaround","Negative Turnaround"];
 const STORE = "priceRythm.rapidResults.v1";
+// Editing controls appear only when the page is opened with ?admin in the link.
+// Without it, everyone (including you) sees exactly what is in results_data.js.
+const ADMIN = /[?&]admin\b/i.test(location.search);
+if (ADMIN) document.body.classList.add("admin");
 let tab = 0, mode = "yoy", quarter = null;
 let queue = [];   // snapshot images waiting for review
 
@@ -102,6 +119,7 @@ let local = (() => {
 const loadLocal = () => local;
 function saveLocal(s) { local = s; try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
 function allData() {
+  if (!ADMIN) return (window.RESULTS_DATA || []).slice();
   const s = loadLocal(), map = new Map();
   (window.RESULTS_DATA || []).forEach(d => map.set(keyOf(d), d));
   s.items.forEach(d => map.set(keyOf(d), d));
@@ -124,9 +142,10 @@ function qRank(q) { const m = /Q(\d)\s*FY(\d{2})/.exec(q || ""); return m ? +m[2
 
 // ---------- grid ----------
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
-const fmt = v => v.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt = v => v == null ? "N/D" : v.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
 
 function growth(prev, cur) {
+  if (prev == null || cur == null) return { kind:"na", text:"N/D" };
   if (prev < 0 && cur >= 0) return { kind:"pos", text:"Loss → Profit" };
   if (prev >= 0 && cur < 0) return { kind:"neg", text:"Profit → Loss" };
   if (prev === 0) return { kind:"na", text:"–" };
@@ -136,8 +155,23 @@ function growth(prev, cur) {
 const gcls = g => g.kind === "num" ? (g.val >= 0 ? "up" : "down") : g.kind === "pos" ? "up" : g.kind === "neg" ? "down" : "flat";
 const base = () => mode === "yoy" ? 0 : 1;
 
+// Growth text from a data lock, calculated there from exact source figures.
+function classify(text) {
+  const t = String(text || "").trim();
+  if (/loss\s*→\s*profit|negative\s*→\s*positive/i.test(t)) return { kind:"pos", text:t };
+  if (/profit\s*→\s*loss|positive\s*→\s*negative/i.test(t)) return { kind:"neg", text:t };
+  const m = /([+\-−–]?)\s*([\d,]+(?:\.\d+)?)\s*%/.exec(t);
+  if (m) { const v = parseFloat(m[2].replace(/,/g, "")) * (/[-−–]/.test(m[1]) ? -1 : 1); return { kind:"num", val:v, text:t }; }
+  return { kind:"na", text:t || "N/D" };
+}
+// b: 0 = YoY, 1 = QoQ
+function gOf(d, key, b) {
+  if (d.g && d.g[key] && d.g[key][b]) return classify(d.g[key][b]);
+  return growth(d[key][b], d[key][2]);
+}
+
 function bucket(d) {
-  const g = growth(d.np[base()], d.np[2]);
+  const g = gOf(d, "np", base());
   if (g.kind === "pos") return 2;
   if (g.kind === "neg") return 3;
   if (g.kind === "num") return g.val >= 0 ? 0 : 1;
@@ -147,11 +181,11 @@ function bucket(d) {
 function card(d) {
   const b = base();
   const rows = ROWS.map(([label,key]) => {
-    const g = growth(d[key][b], d[key][2]);
+    const g = gOf(d, key, b);
     return `<tr><td>${label}</td><td>${fmt(d[key][2])}</td><td>${fmt(d[key][b])}</td><td class="${gcls(g)}">${g.text}</td></tr>`;
   }).join("");
   return `<div class="card">
-    <button class="del" data-k="${esc(keyOf(d))}" title="Remove">×</button>
+    <button class="del admin-only" data-k="${esc(keyOf(d))}" title="Remove">×</button>
     <div class="meta"><span>${esc(d.date)}</span><span>Rs.Cr.</span></div>
     <div class="name">${esc(d.name)}</div>
     <table><tr><th></th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
@@ -171,12 +205,83 @@ function render() {
   const b = base();
   let list = data.filter(d => d.periods[2] === quarter && bucket(d) === tab);
   if (tab < 2) list.sort((x,y) => {
-    const gx = growth(x.np[b], x.np[2]).val, gy = growth(y.np[b], y.np[2]).val;
+    const gx = gOf(x, "np", b).val, gy = gOf(y, "np", b).val;
     return tab === 0 ? gy - gx : gx - gy;
   });
   document.getElementById("grid").innerHTML =
     list.length ? list.map(card).join("") : `<div class="empty">No companies in this list.</div>`;
 }
+
+// ---------- reading data lock text ----------
+function lockValue(cell) {
+  const raw = String(cell || "").replace(/\*/g, "").trim();
+  if (!raw || /^n\/?d$/i.test(raw)) return null;
+  if (/^nil$/i.test(raw)) return 0;
+  let t = raw.replace(/₹|rs\.?|cr\.?|crore|,|\s/gi, "");
+  let neg = false;
+  if (/^\(.*\)$/.test(t)) { neg = true; t = t.slice(1, -1); }
+  if (/^[-−–]/.test(t)) { neg = true; t = t.slice(1); }
+  const v = parseFloat(t);
+  return isFinite(v) ? (neg ? -v : v) : undefined;
+}
+function normQ(s) { const m = /Q\s*([1-4])\s*FY\s*(?:20)?(\d{2})(?!\d)/i.exec(s || ""); return m ? `Q${m[1]} FY${m[2]}` : ""; }
+// Pasted output can lose its line breaks (one long line). Put every field and table row back on its own line.
+function normalizeLock(text) {
+  return String(text || "")
+    .replace(/\r/g, "")
+    .replace(/\s*\b(COMPANY_NAME|FORMER_NAME|QUARTER_INFO|RESULTS_DATE|FINANCIAL_BASIS|PERIOD_YEAR_AGO|PERIOD_PREVIOUS|PERIOD_CURRENT|BUSINESS_DESCRIPTION|SEGMENT_STATEMENT|KEY_NOTE_\d(?:_SOURCE)?|SOURCE_UNIT|SOURCE_PERIOD_NOTE|SALES_SOURCE|PBT_SOURCE|NET_PROFIT_SOURCE_LINE|EPS_SOURCE|BUSINESS_SOURCE|FINAL DATA LOCK STATUS)\s*:/g, "\n$1:")
+    .replace(/\s*(\[(?:[A-E]\.|AUDIT TRAIL)[^\]]*\])/g, "\n$1\n")
+    .replace(/\|[ \t]*\n?[ \t]*\|/g, "|\n|")
+    .replace(/([^\n|])[ \t]*\|[ \t]*(Parameter|Sales|PBT|Net\s*Profit|EPS)\b/g, "$1\n| $2");
+}
+function parseLocks(text) {
+  text = normalizeLock(text);
+  const out = [];
+  const failRe = /DATA LOCK FAILED\s*<*\s*([\s\S]*?)(?=BEGIN VERIFIED DATA LOCK|DATA LOCK FAILED|$)/g;
+  let f;
+  while ((f = failRe.exec(text))) out.push({ error: "The prompt returned DATA LOCK FAILED: " + (f[1].trim() || "no reason given"), audit: [] });
+  const blockRe = /BEGIN VERIFIED DATA LOCK[\s\S]*?(?:END VERIFIED DATA LOCK|$)/g;
+  let m;
+  while ((m = blockRe.exec(text))) {
+    const b = m[0];
+    const field = n => { const r = new RegExp("^[\\s*>-]*" + n + "\\**\\s*:\\s*(.*)$", "mi").exec(b); return r ? r[1].replace(/\*\*/g, "").trim() : ""; };
+    const problems = [];
+    const d = { name: field("COMPANY_NAME"), date: /^n\/?d$/i.test(field("RESULTS_DATE")) ? "" : field("RESULTS_DATE"), problems };
+    const basis = field("FINANCIAL_BASIS").toUpperCase();
+    d.basis = basis.includes("CONSOL") ? "Consolidated" : basis.includes("STANDALONE") ? "Standalone" : "";
+    if (!d.basis) problems.push("Basis not found");
+    const cur = normQ(field("PERIOD_CURRENT")) || normQ(field("QUARTER_INFO"));
+    d.q = cur;
+    d.periods = [normQ(field("PERIOD_YEAR_AGO")) || prevQ(cur, 4), normQ(field("PERIOD_PREVIOUS")) || prevQ(cur, 1), cur];
+    if (!cur) problems.push("Current quarter not found");
+    const rows = b.split(/\r?\n/).filter(l => l.trim().startsWith("|")).map(l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.replace(/\*/g, "").trim()));
+    const g = {};
+    ROWS.forEach(([label, k]) => {
+      const re = k === "sales" ? /^sales$/i : k === "pbt" ? /^pbt$/i : /^net\s*profit$/i;
+      const r = rows.find(c => re.test(c[0]));
+      if (!r || r.length < 4) { d[k] = [undefined, undefined, undefined]; problems.push(`${label} row not found`); return; }
+      d[k] = [1, 2, 3].map(i => lockValue(r[i]));
+      if (d[k].some(v => v === undefined)) problems.push(`${label}: a value could not be read`);
+      g[k] = [r[4] || "", r[5] || ""];
+    });
+    if (!/FINAL DATA LOCK STATUS:\s*VERIFIED/i.test(b)) problems.push("Lock is not marked VERIFIED (output may be cut off)");
+    const audit = [];
+    [["Unit", "SOURCE_UNIT"], ["Sales", "SALES_SOURCE"], ["PBT", "PBT_SOURCE"], ["Net Profit", "NET_PROFIT_SOURCE_LINE"], ["Period note", "SOURCE_PERIOD_NOTE"]]
+      .forEach(([l, n]) => { const v = field(n); if (v) audit.push([l, v]); });
+    for (let i = 1; i <= 4; i++) { const v = field("KEY_NOTE_" + i); if (v && !/^none$/i.test(v)) audit.push(["Key note " + i, v + (field(`KEY_NOTE_${i}_SOURCE`) ? " (" + field(`KEY_NOTE_${i}_SOURCE`) + ")" : "")]); }
+    out.push({ data: d, g, orig: { sales: d.sales, pbt: d.pbt, np: d.np }, audit });
+  }
+  return out;
+}
+function addLockText(text) {
+  const items = parseLocks(text);
+  if (!items.length) { alert("No data lock found. Paste the text from BEGIN VERIFIED DATA LOCK to END VERIFIED DATA LOCK."); return false; }
+  items.forEach(it => queue.push({ id: Math.random().toString(36).slice(2), kind: "lock",
+    status: it.error ? "error" : "ready", error: it.error, data: it.data, g: it.g, orig: it.orig, audit: it.audit }));
+  renderReview();
+  return true;
+}
+const sameVals = (a, o) => a.every((v, i) => v === o[i] || (v != null && o[i] != null && Math.abs(v - o[i]) < 1e-9));
 
 // ---------- reading snapshot images ----------
 let libs = null;
@@ -196,6 +301,8 @@ function loadLibs() {
 }
 
 function addFiles(files) {
+  [...files].filter(f => f.type === "text/plain" || /\.txt$/i.test(f.name)).forEach(f => f.text().then(addLockText));
+  if (![...files].some(f => f.type.startsWith("image/"))) return;
   [...files].filter(f => f.type.startsWith("image/")).forEach(f =>
     queue.push({ id: Math.random().toString(36).slice(2), file: f, url: URL.createObjectURL(f), status: "waiting" }));
   renderReview();
@@ -228,7 +335,9 @@ async function processQueue() {
 }
 
 function reviewItem(q) {
-  const img = `<div><img src="${q.url}" alt="${esc(q.file.name)}" data-open="${q.url}"></div>`;
+  const img = q.kind === "lock"
+    ? `<div><div class="audit"><b>From data lock</b><br>${(q.audit || []).map(([l, v]) => `<b>${esc(l)}:</b> ${esc(v)}`).join("<br>") || "No audit trail in the pasted text."}</div></div>`
+    : `<div><img src="${q.url}" alt="${esc(q.file.name)}" data-open="${q.url}"></div>`;
   if (q.status === "waiting" || q.status === "reading")
     return `<div class="item">${img}<div class="reading">${q.status === "reading" ? "Reading numbers from the image…" : "Waiting…"}<br><span class="status">${libs ? "" : "First image loads the reader, a few seconds."}</span></div></div>`;
   if (q.status === "error")
@@ -240,7 +349,7 @@ function reviewItem(q) {
     const flag = d.check && d.check[k] ? d.check[k][i] : "";
     const cls = flag === "m" ? "flag" : flag === "u" ? "unv" : "";
     const tip = flag === "m" ? "Does not match the YoY/QoQ printed on the image" : flag === "u" ? "Only a Loss/Profit label to check against: compare with the image" : "";
-    return `<td><input class="${cls}" data-f="${k}${i}" value="${v === "" ? "" : v.toFixed(2)}" ${tip ? `title="${tip}"` : ""}></td>`;
+    return `<td><input class="${cls}" data-f="${k}${i}" value="${v === "" || v === undefined ? "" : v === null ? "N/D" : v.toFixed(2)}" ${tip ? `title="${tip}"` : ""}></td>`;
   };
   const rows = ROWS.map(([label, k]) =>
     `<tr><td>${label}</td>${val(k,0)}${val(k,1)}${val(k,2)}<td class="g" data-g="${k}"></td></tr>`).join("");
@@ -270,7 +379,7 @@ function renderReview() {
   const box = document.getElementById("review");
   if (!queue.length) { box.innerHTML = ""; return; }
   box.innerHTML = `<div class="review"><h2>Check before adding</h2>
-    <p class="hint">Numbers were read from the image. Compare each value with the image, then add.</p>
+    <p class="hint">Check the name and numbers, then add. Values from a data lock are shown as the prompt locked them.</p>
     ${queue.map(reviewItem).join("")}</div>`;
   box.querySelectorAll(".item[data-id]").forEach(updateItemGrowth);
 }
@@ -284,7 +393,7 @@ function prevQ(q, back) {
 }
 function readItem(el) {
   const get = f => el.querySelector(`[data-f="${f}"]`).value.trim();
-  const num = f => { const v = parseFloat(get(f).replace(/[,\s₹]/g, "")); return isFinite(v) ? v : NaN; };
+  const num = f => { const t = get(f); if (/^n\/?d$/i.test(t)) return null; const v = parseFloat(t.replace(/[,\s₹]/g, "")); return isFinite(v) ? v : NaN; };
   const qm = /Q\s*([1-4])\s*FY\s*(\d{2})/i.exec(get("q"));
   const q = qm ? `Q${qm[1]} FY${qm[2]}` : "";
   const d = { name: get("name"), date: get("date"), basis: get("basis"), periods: [prevQ(q, 4), prevQ(q, 1), q] };
@@ -298,8 +407,10 @@ function updateItemGrowth(el) {
     const cell = el.querySelector(`[data-g="${k}"]`);
     const v = d[k];
     if (v.some(isNaN)) { cell.innerHTML = ""; return; }
-    const y = growth(v[0], v[2]), q = growth(v[1], v[2]);
-    cell.innerHTML = `<span class="${gcls(y)}">${y.text}</span> / <span class="${gcls(q)}">${q.text}</span>`;
+    const it = queue.find(x => x.id === el.dataset.id);
+    const fromLock = it && it.kind === "lock" && it.g[k] && sameVals(v, it.orig[k]);
+    const y = fromLock ? classify(it.g[k][0]) : growth(v[0], v[2]), q = fromLock ? classify(it.g[k][1]) : growth(v[1], v[2]);
+    cell.innerHTML = `<span class="${gcls(y)}">${esc(y.text)}</span> / <span class="${gcls(q)}">${esc(q.text)}</span>`;
   });
 }
 
@@ -311,6 +422,12 @@ function addFromReview(id) {
   if (!d.periods[2]) bad.push("Quarter should look like Q2 FY27.");
   ROWS.forEach(([label, k]) => { if (d[k].some(isNaN)) bad.push(`${label} has an empty or invalid value.`); });
   if (bad.length) { alert(bad.join("\n")); return; }
+  const it = queue.find(x => x.id === id);
+  if (it && it.kind === "lock") {
+    const g = {};
+    ROWS.forEach(([, k]) => { if (it.g[k] && sameVals(d[k], it.orig[k])) g[k] = it.g[k]; });
+    if (Object.keys(g).length) d.g = g;
+  }
   addEntry(d);
   dropFromQueue(id);
   quarter = d.periods[2];
@@ -318,7 +435,7 @@ function addFromReview(id) {
 }
 function dropFromQueue(id) {
   const q = queue.find(x => x.id === id);
-  if (q) URL.revokeObjectURL(q.url);
+  if (q && q.url) URL.revokeObjectURL(q.url);
   queue = queue.filter(x => x.id !== id);
   renderReview();
 }
@@ -328,8 +445,12 @@ function saveFile() {
   const data = allData().sort((a, z) => qRank(z.periods[2]) - qRank(a.periods[2]));
   const text = "// Rapid Results data (₹ Crore). Saved from the page with \"Save data file\".\n" +
     "// periods: [YoY base, QoQ base, Current]   values in the same order.\n" +
-    "window.RESULTS_DATA = [\n" + data.map(d => "  " + JSON.stringify({
-      name: d.name, date: d.date, basis: d.basis, periods: d.periods, sales: d.sales, pbt: d.pbt, np: d.np })).join(",\n") + "\n];\n";
+    "// g (when present): YoY and QoQ text from the data lock, calculated from exact source figures.\n" +
+    "window.RESULTS_DATA = [\n" + data.map(d => {
+      const o = { name: d.name, date: d.date, basis: d.basis, periods: d.periods, sales: d.sales, pbt: d.pbt, np: d.np };
+      if (d.g) o.g = d.g;
+      return "  " + JSON.stringify(o);
+    }).join(",\n") + "\n];\n";
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
   a.download = "results_data.js";
@@ -346,6 +467,12 @@ document.querySelectorAll("input[name=mode]").forEach(r =>
 document.getElementById("quarter").addEventListener("change", e => { quarter = e.target.value; render(); });
 document.getElementById("files").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
 document.getElementById("save").addEventListener("click", saveFile);
+const lockbox = document.getElementById("lockbox"), locktext = document.getElementById("locktext");
+document.getElementById("lockbtn").addEventListener("click", () => { lockbox.hidden = false; locktext.focus(); });
+document.getElementById("lockcancel").addEventListener("click", () => { lockbox.hidden = true; locktext.value = ""; });
+document.getElementById("lockread").addEventListener("click", () => {
+  if (addLockText(locktext.value)) { lockbox.hidden = true; locktext.value = ""; }
+});
 document.getElementById("grid").addEventListener("click", e => {
   const k = e.target.dataset.k;
   if (k && confirm("Remove this company from the results?")) { removeEntry(k); render(); }
@@ -361,10 +488,10 @@ reviewBox.addEventListener("input", e => { const el = e.target.closest(".item[da
 
 const drop = document.getElementById("drop");
 let depth = 0;
-window.addEventListener("dragenter", e => { if ([...e.dataTransfer.types].includes("Files")) { depth++; drop.classList.add("on"); } });
+window.addEventListener("dragenter", e => { if (ADMIN && [...e.dataTransfer.types].includes("Files")) { depth++; drop.classList.add("on"); } });
 window.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; drop.classList.remove("on"); } });
 window.addEventListener("dragover", e => e.preventDefault());
-window.addEventListener("drop", e => { e.preventDefault(); depth = 0; drop.classList.remove("on"); addFiles(e.dataTransfer.files); });
+window.addEventListener("drop", e => { e.preventDefault(); depth = 0; drop.classList.remove("on"); if (ADMIN) addFiles(e.dataTransfer.files); });
 
 render();
 </script>
