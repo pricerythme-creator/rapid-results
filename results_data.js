@@ -67,5 +67,6 @@ window.RESULTS_DATA = [
   {"name":"Bajaj Consumer","date":"14 Oct 2026","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[265.27,341.57,332.83],"pbt":[51.43,87.27,86.76],"np":[42.29,70.75,70.15]},
   {"name":"Anand Rathi Wealth","date":"09 Oct 2026","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[297.37,321.99,343.99],"pbt":[134.02,206.2,116.93],"np":[99.35,162.73,88.96]},
   {"name":"Anand Rathi Share","date":"","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[227.2,246.1,273.21],"pbt":[37.53,31.38,56.15],"np":[27.9,23.36,41.94]},
-  {"name":"Poonawalla Fincorp Limited","date":"09 Oct 2026","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[1542.3,2330.22,2624.5],"pbt":[98.89,411.26,501.3],"np":[74.2,307.71,374.85],"g":{"sales":["+70.2%","+12.6%"],"pbt":["+406.9%","+21.9%"],"np":["+405.2%","+21.8%"]}}
+  {"name":"Poonawalla Fincorp Limited","date":"09 Oct 2026","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[1542.3,2330.22,2624.5],"pbt":[98.89,411.26,501.3],"np":[74.2,307.71,374.85],"g":{"sales":["+70.2%","+12.6%"],"pbt":["+406.9%","+21.9%"],"np":["+405.2%","+21.8%"]}},
+  {"name":"Tech Mahindra Limited","date":"15 Oct 2026","basis":"Consolidated","periods":["Q2 FY26","Q1 FY27","Q2 FY27"],"sales":[13994.9,15711.9,16180.2],"pbt":[1659.3,2041.9,2296.1],"np":[1194.5,1465.1,1585.6],"g":{"sales":["+15.6%","+3.0%"],"pbt":["+38.4%","+12.4%"],"np":["+32.7%","+8.2%"]}}
 ];
