@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Earnings Rythm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root { --ink:#111; --muted:#777; --line:#cfd3da; --card:#f5f6f8; --up:#2e9e5b; --down:#d64545; --flag:#fff1b8; --accent:#1f4e9c; }
   * { box-sizing:border-box; }
@@ -84,13 +87,60 @@
   .audit { font-size:11px; color:#444; background:#f5f6f8; border:1px solid #e1e4ea; border-radius:3px; padding:10px; line-height:1.5; overflow-wrap:anywhere; }
   .audit b { color:#111; }
   @media (max-width:640px) { .item { grid-template-columns:1fr; } }
+
+  /* ===== price rythm look: brand colours, fonts, cards ===== */
+  :root { --green:#009245; --green-ink:#007a3a; --blue:#0071bc; --up:#007a3a; --down:#c62828; --accent:#0071bc;
+          --line:#e3e6eb; --muted:#6b7280; --ink:#1a1d23; }
+  body { font-family:Inter,"Segoe UI",Arial,sans-serif; background:#f7f8fa; }
+  h1, .tab, .name, .sortby, .mode label { font-family:Poppins,Inter,"Segoe UI",Arial,sans-serif; }
+  h1 { font-size:26px; font-weight:700; letter-spacing:.2px; }
+  h1 .hg { color:var(--green); } h1 .hb { color:var(--blue); } h1 #qtitle { color:var(--ink); }
+  input[type=radio] { accent-color:var(--blue); }
+  .contact a:hover { color:var(--blue); }
+
+  .bar { border-bottom:1px solid var(--line); }
+  .tabs { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { white-space:nowrap; font-weight:500; color:#5b6270; border-bottom-width:3px; }
+  .tab:hover { color:var(--blue); }
+  .tab.on { color:var(--blue); font-weight:600; border-color:var(--blue); }
+  .tab .n { display:inline-block; margin-left:6px; min-width:20px; padding:0 6px; border-radius:10px; background:#eef1f5; color:#5b6270; font-size:11px; font-weight:600; line-height:18px; text-align:center; font-family:Inter,sans-serif; }
+  .tab.on .n { background:var(--blue); color:#fff; }
+  .search, .sortby select { border-color:#cfd5dd; border-radius:6px; background:#fff; }
+  .search:focus, .sortby select:focus { outline:2px solid rgba(0,113,188,.25); border-color:var(--blue); }
+  .mode label { font-weight:500; }
+
+  .grid { gap:18px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px 12px; transition:box-shadow .15s, border-color .15s; }
+  .card:hover { box-shadow:0 6px 18px rgba(17,24,39,.08); border-color:#d5dae2; }
+  .chead { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .meta { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .basis { margin:0; font-size:10px; padding:1px 7px; border:1px solid #d5dae2; border-radius:10px; color:#4b5563; background:#f7f8fa; }
+  .badge { font-size:12px; font-weight:600; padding:3px 9px; border-radius:12px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .badge small { font-weight:500; opacity:.75; margin-right:4px; font-size:10px; }
+  .badge.up { background:#e7f5ed; color:var(--green-ink); }
+  .badge.down { background:#fdecec; color:var(--down); }
+  .badge.flat { background:#eef1f5; color:#4b5563; }
+  .name { font-size:15px; font-weight:600; margin:10px 0 10px; padding-right:0; line-height:1.3; }
+  .card table { font-variant-numeric:tabular-nums; }
+  .card th { border-top:none; border-bottom:1px solid var(--line); color:var(--muted); font-size:11px; padding:4px 0 6px; }
+  .card th:first-child { text-align:left; font-size:10px; }
+  .card td { padding:6px 0; border-bottom:1px solid #f1f3f6; }
+  .card tr:last-child td { border-bottom:none; }
+  .card td:nth-child(2) { font-weight:600; }
+  .card td:first-child { color:#374151; }
+  .cfoot { display:flex; justify-content:flex-end; gap:4px; margin-top:6px; }
+  .edit, .del { position:static; font-size:14px; }
+  .basisline { color:var(--muted); }
+  button.primary { background:var(--blue); border-color:var(--blue); }
+  @media (max-width:640px) { h1 { font-size:21px; } .searchwrap { width:100%; } }
 </style>
 </head>
 <body>
 <div class="drop" id="drop">Drop snapshot images or data lock .txt files</div>
 <div class="wrap">
   <div class="top">
-    <div class="title"><h1>EARNINGS RYTHM<span id="qtitle"></span></h1><span class="byline">Prepared By : Prasad Rao</span></div>
+    <div class="title"><h1><span class="hg">EARNINGS</span> <span class="hb">RYTHM</span><span id="qtitle"></span></h1><span class="byline">Prepared By : Prasad Rao</span></div>
     <div class="actions">
       <select id="quarter" title="Quarter"></select>
       <button id="lockbtn" class="admin-only">Paste data lock</button>
@@ -223,13 +273,16 @@ function card(d) {
     const g = gOf(d, key, b);
     return `<tr><td>${label}</td><td>${fmt(d[key][2])}</td><td>${fmt(d[key][b])}</td><td class="${gcls(g)}">${g.text}</td></tr>`;
   }).join("");
+  const ng = gOf(d, "np", b);
   return `<div class="card">
-    <button class="edit admin-only" data-e="${esc(keyOf(d))}" title="Edit">✎</button>
-    <button class="del admin-only" data-k="${esc(keyOf(d))}" title="Remove">×</button>
-    <div class="meta"><span>${esc(d.date)}</span><span>Rs.Cr.</span></div>
+    <div class="chead">
+      <div class="meta"><span>${esc(d.date)}</span><span class="basis">${esc(d.basis)}</span></div>
+      <span class="badge ${gcls(ng)}" title="Net Profit growth (${mode === "yoy" ? "YoY" : "QoQ"})"><small>NP</small>${esc(ng.text)}</span>
+    </div>
     <div class="name">${esc(d.name)}</div>
-    <table><tr><th></th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
-    <span class="basis">${esc(d.basis)}</span></div>`;
+    <table><tr><th>₹ Cr</th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
+    <div class="cfoot admin-only"><button class="edit" data-e="${esc(keyOf(d))}" title="Edit">✎</button><button class="del" data-k="${esc(keyOf(d))}" title="Remove">×</button></div>
+  </div>`;
 }
 
 const MON = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
@@ -249,7 +302,10 @@ function render() {
   document.getElementById("qtitle").textContent = quarter ? " - " + quarter.replace(/FY(\d{2})$/, "FY20$1") : "";
 
   document.getElementById("tabs").innerHTML =
-    TABS.map((t,i) => `<div class="tab${i===tab && !search.trim()?" on":""}" data-i="${i}">${t}</div>`).join("");
+    TABS.map((t,i) => {
+      const n = data.filter(d => d.periods[2] === quarter && (i === 0 || bucket(d) === i)).length;
+      return `<div class="tab${i===tab && !search.trim()?" on":""}" data-i="${i}">${t}<span class="n" data-i="${i}">${n}</span></div>`;
+    }).join("");
   const b = base();
   const term = search.trim().toLowerCase();
   // While searching, look across every company in the quarter, whatever the tab.
