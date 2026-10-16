@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rapid Results</title>
+<title>Earnings Rythm</title>
 <style>
   :root { --ink:#111; --muted:#777; --line:#cfd3da; --card:#f5f6f8; --up:#2e9e5b; --down:#d64545; --flag:#fff1b8; --accent:#1f4e9c; }
   * { box-sizing:border-box; }
@@ -23,14 +23,23 @@
   .tabs { display:flex; flex-wrap:wrap; }
   .tab { padding:12px 14px; cursor:pointer; color:#555; font-size:14px; border-bottom:2px solid transparent; }
   .tab.on { color:var(--ink); font-weight:600; border-color:var(--ink); }
+  .tools { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin:-8px 0 18px; }
+  .searchwrap { position:relative; width:260px; max-width:100%; }
+  .search { font:inherit; font-size:13px; padding:7px 32px 7px 10px; width:100%; border:1px solid #bbb; border-radius:3px; }
+  .searchwrap svg { position:absolute; right:9px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:#555; pointer-events:none; }
+  .rtools { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .sortby { font-size:12px; color:#444; display:flex; align-items:center; gap:8px; }
+  .sortby select { font:inherit; font-size:13px; padding:5px 8px; border:1px solid #bbb; border-radius:3px; background:#fff; min-width:96px; }
   .mode label { margin-left:14px; font-size:13px; font-weight:600; cursor:pointer; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
   .card { position:relative; background:var(--card); border-radius:4px; padding:12px 14px 14px; font-size:13px; }
   .meta { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); }
-  .name { font-weight:700; margin:8px 0 10px; font-size:13px; padding-right:14px; }
+  .name { font-weight:700; margin:8px 0 10px; font-size:13px; padding-right:34px; }
   body:not(.admin) .admin-only { display:none !important; }
   .del { position:absolute; top:20px; right:8px; border:none; background:none; color:#aaa; font-size:15px; padding:0 4px; cursor:pointer; }
   .del:hover { color:var(--down); }
+  .edit { position:absolute; top:20px; right:28px; border:none; background:none; color:#aaa; font-size:14px; padding:0 4px; cursor:pointer; }
+  .edit:hover { color:var(--accent); }
   table { width:100%; border-collapse:collapse; }
   th { font-weight:400; color:#555; font-size:11px; text-align:right; padding:6px 0; border-top:1px solid #333; border-bottom:1px solid var(--line); }
   th:first-child, td:first-child { text-align:left; }
@@ -75,7 +84,7 @@
 <div class="drop" id="drop">Drop snapshot images or data lock .txt files</div>
 <div class="wrap">
   <div class="top">
-    <div class="title"><h1>RAPID RESULTS<span id="qtitle"></span></h1><span class="byline">Prepared By : Prasad Rao</span></div>
+    <div class="title"><h1>EARNINGS RYTHM<span id="qtitle"></span></h1><span class="byline">Prepared By : Prasad Rao</span></div>
     <div class="actions">
       <select id="quarter" title="Quarter"></select>
       <button id="lockbtn" class="admin-only">Paste data lock</button>
@@ -92,9 +101,20 @@
   <div id="review"></div>
   <div class="bar">
     <div class="tabs" id="tabs"></div>
-    <div class="mode">
-      <label><input type="radio" name="mode" value="qoq"> QoQ</label>
-      <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
+  </div>
+  <div class="tools">
+    <div class="searchwrap">
+      <input type="search" id="search" class="search" placeholder="Search By Company Name" autocomplete="off">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </div>
+    <div class="rtools">
+      <div class="mode">
+        <label><input type="radio" name="mode" value="qoq"> QoQ</label>
+        <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
+      </div>
+      <label class="sortby">Sort By
+        <select id="sortby"><option value="latest">Latest</option><option value="name">Name</option></select>
+      </label>
     </div>
   </div>
   <div class="grid" id="grid"></div>
@@ -104,13 +124,13 @@
 <script src="results_data.js"></script>
 <script>
 const ROWS = [["Sales","sales"],["PBT","pbt"],["Net Profit","np"]];
-const TABS = ["Best Performer","Worst Performer","Positive Turnaround","Negative Turnaround"];
+const TABS = ["Latest Results","Best Performer","Worst Performer","Positive Turnaround","Negative Turnaround"];
 const STORE = "priceRythm.rapidResults.v1";
 // Editing controls appear only when the page is opened with ?admin in the link.
 // Without it, everyone (including you) sees exactly what is in results_data.js.
 const ADMIN = /[?&]admin\b/i.test(location.search);
 if (ADMIN) document.body.classList.add("admin");
-let tab = 0, mode = "yoy", quarter = null;
+let tab = 0, mode = "yoy", quarter = null, search = "", sortBy = "latest";
 let queue = [];   // snapshot images waiting for review
 
 // ---------- data ----------
@@ -175,9 +195,9 @@ function gOf(d, key, b) {
 
 function bucket(d) {
   const g = gOf(d, "np", base());
-  if (g.kind === "pos") return 2;
-  if (g.kind === "neg") return 3;
-  if (g.kind === "num") return g.val >= 0 ? 0 : 1;
+  if (g.kind === "pos") return 3;
+  if (g.kind === "neg") return 4;
+  if (g.kind === "num") return g.val >= 0 ? 1 : 2;
   return -1;
 }
 
@@ -188,11 +208,18 @@ function card(d) {
     return `<tr><td>${label}</td><td>${fmt(d[key][2])}</td><td>${fmt(d[key][b])}</td><td class="${gcls(g)}">${g.text}</td></tr>`;
   }).join("");
   return `<div class="card">
+    <button class="edit admin-only" data-e="${esc(keyOf(d))}" title="Edit">✎</button>
     <button class="del admin-only" data-k="${esc(keyOf(d))}" title="Remove">×</button>
     <div class="meta"><span>${esc(d.date)}</span><span>Rs.Cr.</span></div>
     <div class="name">${esc(d.name)}</div>
     <table><tr><th></th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
     <span class="basis">${esc(d.basis)}</span></div>`;
+}
+
+const MON = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+function dateVal(s) {
+  const m = /(\d{1,2})\s*([A-Za-z]{3})[a-z]*\s*(\d{4})/.exec(s || "");
+  return m && m[2].toLowerCase() in MON ? new Date(+m[3], MON[m[2].toLowerCase()], +m[1]).getTime() : 0;
 }
 
 function render() {
@@ -202,19 +229,22 @@ function render() {
   const qsel = document.getElementById("quarter");
   qsel.innerHTML = qs.map(q => `<option${q === quarter ? " selected" : ""}>${esc(q)}</option>`).join("");
   qsel.style.display = qs.length > 1 ? "" : "none";
-  // Title shows the quarter on screen, e.g. "RAPID RESULTS - Q2 FY2027"
+  // Title shows the quarter on screen, e.g. "EARNINGS RYTHM - Q2 FY2027"
   document.getElementById("qtitle").textContent = quarter ? " - " + quarter.replace(/FY(\d{2})$/, "FY20$1") : "";
 
   document.getElementById("tabs").innerHTML =
-    TABS.map((t,i) => `<div class="tab${i===tab?" on":""}" data-i="${i}">${t}</div>`).join("");
+    TABS.map((t,i) => `<div class="tab${i===tab && !search.trim()?" on":""}" data-i="${i}">${t}</div>`).join("");
   const b = base();
-  let list = data.filter(d => d.periods[2] === quarter && bucket(d) === tab);
-  if (tab < 2) list.sort((x,y) => {
-    const gx = gOf(x, "np", b).val, gy = gOf(y, "np", b).val;
-    return tab === 0 ? gy - gx : gx - gy;
-  });
-  document.getElementById("grid").innerHTML =
-    list.length ? list.map(card).join("") : `<div class="empty">No companies in this list.</div>`;
+  const term = search.trim().toLowerCase();
+  // While searching, look across every company in the quarter, whatever the tab.
+  let list = data.filter(d => d.periods[2] === quarter &&
+    (term ? d.name.toLowerCase().includes(term) : tab === 0 || bucket(d) === tab));
+  // Sort By: Name (A–Z) or Latest (newest result date first; same date, most recently added first).
+  const idx = new Map(data.map((d, i) => [d, i]));
+  if (sortBy === "name") list.sort((x, y) => x.name.localeCompare(y.name, "en", { sensitivity: "base" }));
+  else list.sort((x, y) => (dateVal(y.date) - dateVal(x.date)) || (idx.get(y) - idx.get(x)));
+  document.getElementById("grid").innerHTML = list.length ? list.map(card).join("")
+    : `<div class="empty">${term ? "No company matches “" + esc(search.trim()) + "”." : "No companies in this list."}</div>`;
 }
 
 // ---------- reading data lock text ----------
@@ -340,7 +370,9 @@ async function processQueue() {
 }
 
 function reviewItem(q) {
-  const img = q.kind === "lock"
+  const img = q.kind === "edit"
+    ? `<div><div class="audit"><b>Editing:</b> ${esc(q.data.name)}<br>Change any field and click Save changes. The card updates in place.</div></div>`
+    : q.kind === "lock"
     ? `<div><div class="audit"><b>From data lock</b><br>${(q.audit || []).map(([l, v]) => `<b>${esc(l)}:</b> ${esc(v)}`).join("<br>") || "No audit trail in the pasted text."}</div></div>`
     : `<div><img src="${q.url}" alt="${esc(q.file.name)}" data-open="${q.url}"></div>`;
   if (q.status === "waiting" || q.status === "reading")
@@ -376,7 +408,7 @@ function reviewItem(q) {
     ${d.problems.length ? `<p class="problems">${d.problems.map(esc).join("<br>")}</p>` : ""}
     ${mism ? `<p class="problems">Yellow: the YoY/QoQ printed on the image doesn't match these numbers. Either the value was misread or the image has a wrong figure.</p>` : ""}
     ${unv ? `<p class="problems info">Blue: the image shows only Loss → Profit here, so there was no % to confirm the value. Compare it with the image.</p>` : ""}
-    <div class="itembtns"><button class="primary" data-add="${q.id}">Add to results</button><button data-skip="${q.id}">Skip</button></div>
+    <div class="itembtns"><button class="primary" data-add="${q.id}">${q.kind === "edit" ? "Save changes" : "Add to results"}</button><button data-skip="${q.id}">${q.kind === "edit" ? "Cancel" : "Skip"}</button></div>
   </div></div>`;
 }
 
@@ -413,7 +445,7 @@ function updateItemGrowth(el) {
     const v = d[k];
     if (v.some(isNaN)) { cell.innerHTML = ""; return; }
     const it = queue.find(x => x.id === el.dataset.id);
-    const fromLock = it && it.kind === "lock" && it.g[k] && sameVals(v, it.orig[k]);
+    const fromLock = it && (it.kind === "lock" || it.kind === "edit") && it.g[k] && sameVals(v, it.orig[k]);
     const y = fromLock ? classify(it.g[k][0]) : growth(v[0], v[2]), q = fromLock ? classify(it.g[k][1]) : growth(v[1], v[2]);
     cell.innerHTML = `<span class="${gcls(y)}">${esc(y.text)}</span> / <span class="${gcls(q)}">${esc(q.text)}</span>`;
   });
@@ -428,11 +460,12 @@ function addFromReview(id) {
   ROWS.forEach(([label, k]) => { if (d[k].some(isNaN)) bad.push(`${label} has an empty or invalid value.`); });
   if (bad.length) { alert(bad.join("\n")); return; }
   const it = queue.find(x => x.id === id);
-  if (it && it.kind === "lock") {
+  if (it && (it.kind === "lock" || it.kind === "edit")) {
     const g = {};
     ROWS.forEach(([, k]) => { if (it.g[k] && sameVals(d[k], it.orig[k])) g[k] = it.g[k]; });
     if (Object.keys(g).length) d.g = g;
   }
+  if (it && it.kind === "edit" && it.oldKey !== keyOf(d)) removeEntry(it.oldKey);
   addEntry(d);
   dropFromQueue(id);
   quarter = d.periods[2];
@@ -448,7 +481,7 @@ function dropFromQueue(id) {
 // ---------- save data file ----------
 function saveFile() {
   const data = allData().sort((a, z) => qRank(z.periods[2]) - qRank(a.periods[2]));
-  const text = "// Rapid Results data (₹ Crore). Saved from the page with \"Save data file\".\n" +
+  const text = "// Earnings Rythm data (₹ Crore). Saved from the page with \"Save data file\".\n" +
     "// periods: [YoY base, QoQ base, Current]   values in the same order.\n" +
     "// g (when present): YoY and QoQ text from the data lock, calculated from exact source figures.\n" +
     "window.RESULTS_DATA = [\n" + data.map(d => {
@@ -465,10 +498,12 @@ function saveFile() {
 
 // ---------- events ----------
 document.getElementById("tabs").addEventListener("click", e => {
-  if (e.target.dataset.i) { tab = +e.target.dataset.i; render(); }
+  if (e.target.dataset.i) { tab = +e.target.dataset.i; search = ""; document.getElementById("search").value = ""; render(); }
 });
 document.querySelectorAll("input[name=mode]").forEach(r =>
   r.addEventListener("change", e => { mode = e.target.value; render(); }));
+document.getElementById("sortby").addEventListener("change", e => { sortBy = e.target.value; render(); });
+document.getElementById("search").addEventListener("input", e => { search = e.target.value; render(); });
 document.getElementById("quarter").addEventListener("change", e => { quarter = e.target.value; render(); });
 document.getElementById("files").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
 document.getElementById("save").addEventListener("click", saveFile);
@@ -478,7 +513,20 @@ document.getElementById("lockcancel").addEventListener("click", () => { lockbox.
 document.getElementById("lockread").addEventListener("click", () => {
   if (addLockText(locktext.value)) { lockbox.hidden = true; locktext.value = ""; }
 });
+function startEdit(k) {
+  const d = allData().find(x => keyOf(x) === k);
+  if (!d) return;
+  queue = queue.filter(x => !(x.kind === "edit" && x.oldKey === k));
+  const copy = v => v ? v.slice() : v;
+  queue.unshift({ id: Math.random().toString(36).slice(2), kind: "edit", status: "ready", oldKey: k,
+    data: { name: d.name, date: d.date, basis: d.basis, q: d.periods[2], periods: d.periods.slice(),
+            sales: copy(d.sales), pbt: copy(d.pbt), np: copy(d.np), problems: [] },
+    g: d.g ? JSON.parse(JSON.stringify(d.g)) : {}, orig: { sales: copy(d.sales), pbt: copy(d.pbt), np: copy(d.np) } });
+  renderReview();
+  document.getElementById("review").scrollIntoView({ behavior: "smooth" });
+}
 document.getElementById("grid").addEventListener("click", e => {
+  if (e.target.dataset.e) { startEdit(e.target.dataset.e); return; }
   const k = e.target.dataset.k;
   if (k && confirm("Remove this company from the results?")) { removeEntry(k); render(); }
 });
