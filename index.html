@@ -361,7 +361,26 @@ function normalizeLock(text) {
     .replace(/\s*\b(COMPANY_NAME|FORMER_NAME|QUARTER_INFO|RESULTS_DATE|FINANCIAL_BASIS|PERIOD_YEAR_AGO|PERIOD_PREVIOUS|PERIOD_CURRENT|BUSINESS_DESCRIPTION|SEGMENT_STATEMENT|KEY_NOTE_\d(?:_SOURCE)?|SOURCE_UNIT|SOURCE_PERIOD_NOTE|SALES_SOURCE|PBT_SOURCE|NET_PROFIT_SOURCE_LINE|EPS_SOURCE|BUSINESS_SOURCE|FINAL DATA LOCK STATUS)\s*:/g, "\n$1:")
     .replace(/\s*(\[(?:[A-E]\.|AUDIT TRAIL)[^\]]*\])/g, "\n$1\n")
     .replace(/\|[ \t]*\n?[ \t]*\|/g, "|\n|")
-    .replace(/([^\n|])[ \t]*\|[ \t]*(Parameter|Sales|PBT|Net\s*Profit|EPS)\b/g, "$1\n| $2");
+    .replace(/([^\n|])[ \t]*\|[ \t]*(Parameter|Sales|PBT|Net\s*Profit|EPS)\b/g, "$1\n| $2")
+    .replace(/[ \t]+(Parameter(?=[ \t]+Q[1-4])|Sales(?=[ \t]+[-−–(]?\s*(?:₹|Rs|N\/D|NIL|\d))|PBT(?=[ \t]+[-−–(]?\s*(?:₹|Rs|N\/D|NIL|\d))|Net Profit(?=[ \t]+[-−–(]?\s*(?:₹|Rs|N\/D|NIL|\d))|EPS \((?=[^)]*\)[ \t]+[-−–(]?\s*(?:₹|Rs|N\/D|NIL|\d)))/g, "\n$1");
+}
+// Table rows can arrive as Markdown pipes, tab-separated, or (after copy/paste) separated by plain spaces.
+const ROW_LABEL = /^(Parameter|Sales|PBT|Net\s*Profit|EPS(?:\s*\([^)]*\))?)(?=\s|$)/i;
+const CELL_TOKEN = /[+\-−–]?\s*\(?\s*[-−–]?\s*(?:₹|Rs\.?)?\s*[\d,]+(?:\.\d+)?\s*(?:Cr\.?)?\s*\)?(?:\s*%(?:\s*Loss\s+(?:Reduced|Widened))?)?|N\/D|N\/M|NIL|(?:Loss|Profit|Negative|Positive)\s*→\s*(?:Loss|Profit|Negative|Positive)/gi;
+function lockRows(b) {
+  const out = [];
+  b.split(/\r?\n/).forEach(line => {
+    const t = line.replace(/\*/g, "").trim();
+    if (!t) return;
+    if (t.startsWith("|")) { out.push(t.replace(/^\||\|$/g, "").split("|").map(c => c.trim())); return; }
+    if (t.includes("\t")) { const c = t.split("\t").map(x => x.trim()).filter(x => x !== ""); if (c.length >= 4) out.push(c); return; }
+    const m = ROW_LABEL.exec(t);
+    if (m && !/^parameter$/i.test(m[1])) {
+      const cells = (t.slice(m[0].length).match(CELL_TOKEN) || []).map(x => x.trim());
+      if (cells.length >= 3) out.push([m[1]].concat(cells));
+    }
+  });
+  return out;
 }
 function parseLocks(text) {
   text = normalizeLock(text);
@@ -383,7 +402,7 @@ function parseLocks(text) {
     d.q = cur;
     d.periods = [normQ(field("PERIOD_YEAR_AGO")) || prevQ(cur, 4), normQ(field("PERIOD_PREVIOUS")) || prevQ(cur, 1), cur];
     if (!cur) problems.push("Current quarter not found");
-    const rows = b.split(/\r?\n/).filter(l => l.trim().startsWith("|")).map(l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.replace(/\*/g, "").trim()));
+    const rows = lockRows(b);
     const g = {};
     ROWS.forEach(([label, k]) => {
       const re = k === "sales" ? /^sales$/i : k === "pbt" ? /^pbt$/i : /^net\s*profit$/i;
