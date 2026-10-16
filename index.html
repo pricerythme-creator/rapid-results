@@ -33,6 +33,7 @@
   .search { font:inherit; font-size:13px; padding:7px 32px 7px 10px; width:100%; border:1px solid #bbb; border-radius:3px; }
   .searchwrap svg { position:absolute; right:9px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:#555; pointer-events:none; }
   .rtools { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .basisline { font-size:12px; color:#666; margin:-6px 0 16px; }
   .sortby { font-size:12px; color:#444; display:flex; align-items:center; gap:8px; }
   .sortby select { font:inherit; font-size:13px; padding:5px 8px; border:1px solid #bbb; border-radius:3px; background:#fff; min-width:96px; }
   .mode label { margin-left:14px; font-size:13px; font-weight:600; cursor:pointer; }
@@ -118,10 +119,11 @@
         <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
       </div>
       <label class="sortby">Sort By
-        <select id="sortby"><option value="latest">Latest</option><option value="name">Name</option></select>
+        <select id="sortby"></select>
       </label>
     </div>
   </div>
+  <div class="basisline" id="basisline"></div>
   <div class="grid" id="grid"></div>
   <div class="foot"><img src="logo.png" alt="price rythm">
     <div class="contact">
@@ -143,6 +145,8 @@ const STORE = "priceRythm.rapidResults.v1";
 const ADMIN = /[?&]admin\b/i.test(location.search);
 if (ADMIN) document.body.classList.add("admin");
 let tab = 0, mode = "yoy", quarter = null, search = "", sortBy = "latest";
+// Best / Worst Performer rank by Net Profit growth by default; the other views by latest result date.
+const defaultSort = () => (tab === 1 || tab === 2) && !search.trim() ? "growth" : "latest";
 let queue = [];   // snapshot images waiting for review
 
 // ---------- data ----------
@@ -251,10 +255,32 @@ function render() {
   // While searching, look across every company in the quarter, whatever the tab.
   let list = data.filter(d => d.periods[2] === quarter &&
     (term ? d.name.toLowerCase().includes(term) : tab === 0 || bucket(d) === tab));
-  // Sort By: Name (A–Z) or Latest (newest result date first; same date, most recently added first).
+  // Sort By options for this view (Growth only where every company has a % growth: Best / Worst Performer)
+  const growthView = (tab === 1 || tab === 2) && !term;
+  const opts = (growthView ? [["growth", "Growth"]] : []).concat([["latest", "Latest"], ["name", "Name"]]);
+  if (!opts.some(o => o[0] === sortBy)) sortBy = defaultSort();
+  document.getElementById("sortby").innerHTML = opts.map(([v, l]) => `<option value="${v}"${v === sortBy ? " selected" : ""}>${l}</option>`).join("");
+
   const idx = new Map(data.map((d, i) => [d, i]));
+  const byLatest = (x, y) => (dateVal(y.date) - dateVal(x.date)) || (idx.get(y) - idx.get(x));
   if (sortBy === "name") list.sort((x, y) => x.name.localeCompare(y.name, "en", { sensitivity: "base" }));
-  else list.sort((x, y) => (dateVal(y.date) - dateVal(x.date)) || (idx.get(y) - idx.get(x)));
+  else if (sortBy === "growth") list.sort((x, y) => {
+    const gx = gOf(x, "np", b).val, gy = gOf(y, "np", b).val;
+    return (tab === 1 ? gy - gx : gx - gy) || byLatest(x, y);   // Best: highest first; Worst: biggest fall first
+  });
+  else list.sort(byLatest);
+
+  // One line under the tabs stating what the list contains and how it is ordered
+  const cmp = `${mode === "yoy" ? "YoY" : "QoQ"}: ${quarter || ""} vs ${prevQ(quarter, mode === "yoy" ? 4 : 1)}`;
+  const what = term ? "Search results across all companies"
+    : ["All companies with " + (quarter || "") + " results",
+       "Companies whose Net Profit grew (" + cmp + ")",
+       "Companies whose Net Profit fell (" + cmp + ")",
+       "Companies whose Net Profit turned from loss to profit (" + cmp + ")",
+       "Companies whose Net Profit turned from profit to loss (" + cmp + ")"][tab];
+  const how = sortBy === "growth" ? (tab === 1 ? "ranked by Net Profit growth, highest first" : "ranked by Net Profit growth, biggest fall first")
+    : sortBy === "name" ? "sorted by name (A–Z)" : "sorted by latest result date";
+  document.getElementById("basisline").textContent = quarter ? `${what}, ${how}.` : "";
   document.getElementById("grid").innerHTML = list.length ? list.map(card).join("")
     : `<div class="empty">${term ? "No company matches “" + esc(search.trim()) + "”." : "No companies in this list."}</div>`;
 }
@@ -510,7 +536,7 @@ function saveFile() {
 
 // ---------- events ----------
 document.getElementById("tabs").addEventListener("click", e => {
-  if (e.target.dataset.i) { tab = +e.target.dataset.i; search = ""; document.getElementById("search").value = ""; render(); }
+  if (e.target.dataset.i) { tab = +e.target.dataset.i; search = ""; document.getElementById("search").value = ""; sortBy = defaultSort(); render(); }
 });
 document.querySelectorAll("input[name=mode]").forEach(r =>
   r.addEventListener("change", e => { mode = e.target.value; render(); }));
