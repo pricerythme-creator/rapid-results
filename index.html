@@ -133,6 +133,14 @@
   .edit, .del { position:static; font-size:14px; }
   .basisline { color:var(--muted); }
   button.primary { background:var(--blue); border-color:var(--blue); }
+  .grid { grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); }
+  .card th, .card td { padding-left:4px; }
+  .card th:first-child, .card td:first-child { padding-left:0; }
+  .card td:nth-child(2), .card td:nth-child(3) { color:#4b5563; }
+  .card td:nth-child(2) { font-weight:400; }
+  .card td:nth-child(4) { font-weight:600; color:var(--ink); }
+  .card th:nth-child(4) { color:var(--ink); font-weight:600; }
+  @media (max-width:520px) { .grid { grid-template-columns:1fr; } .card { padding:12px 10px; } .card table { font-size:12px; } }
   @media (max-width:640px) { h1 { font-size:21px; } .searchwrap { width:100%; } }
 
   /* Header card (matches Concall Rythm) */
@@ -140,6 +148,10 @@
          box-shadow:0 1px 3px rgba(17,24,39,.06), 0 4px 14px rgba(17,24,39,.05); }
   .top::after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:linear-gradient(90deg, var(--green), var(--blue)); }
   @media (max-width:640px) { .top { padding:14px 14px 16px; } }
+
+  /* Turnaround text: full on desktop, short (L→P / P→L) on phones */
+  .sh { display:none; }
+  @media (max-width:520px) { .lg { display:none; } .sh { display:inline; } }
 </style>
 </head>
 <body>
@@ -170,10 +182,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     </div>
     <div class="rtools">
-      <div class="mode">
-        <label><input type="radio" name="mode" value="qoq"> QoQ</label>
-        <label><input type="radio" name="mode" value="yoy" checked> YoY</label>
-      </div>
       <label class="sortby">Sort By
         <select id="sortby"></select>
       </label>
@@ -274,19 +282,22 @@ function bucket(d) {
 }
 
 function card(d) {
-  const b = base();
-  const rows = ROWS.map(([label,key]) => {
-    const g = gOf(d, key, b);
-    return `<tr><td>${label}</td><td>${fmt(d[key][2])}</td><td>${fmt(d[key][b])}</td><td class="${gcls(g)}">${g.text}</td></tr>`;
-  }).join("");
-  const ng = gOf(d, "np", b);
+  // All five columns: three quarters, then YoY and QoQ
+  const SHORT = { "loss→profit":"L→P", "profit→loss":"P→L", "negative→positive":"N→P", "positive→negative":"P→N" };
+  const cell = g => {
+    const s = SHORT[g.text.toLowerCase().replace(/\s+/g, "")];
+    return `<td class="${gcls(g)}">${s ? `<span class="lg">${esc(g.text)}</span><span class="sh" title="${esc(g.text)}">${s}</span>` : esc(g.text)}</td>`;
+  };
+  const rows = ROWS.map(([label,key]) =>
+    `<tr><td>${label}</td><td>${fmt(d[key][0])}</td><td>${fmt(d[key][1])}</td><td>${fmt(d[key][2])}</td>${cell(gOf(d, key, 0))}${cell(gOf(d, key, 1))}</tr>`).join("");
+  const ng = gOf(d, "np", 0);
   return `<div class="card">
     <div class="chead">
       <div class="meta"><span>${esc(d.date)}</span><span class="basis">${esc(d.basis)}</span></div>
-      <span class="badge ${gcls(ng)}" title="Net Profit growth (${mode === "yoy" ? "YoY" : "QoQ"})"><small>NP</small>${esc(ng.text)}</span>
+      <span class="badge ${gcls(ng)}" title="Net Profit growth (YoY)"><small>NP YoY</small>${esc(ng.text)}</span>
     </div>
     <div class="name">${esc(d.name)}</div>
-    <table><tr><th>₹ Cr</th><th>${esc(d.periods[2])}</th><th>${esc(d.periods[b])}</th><th>Growth</th></tr>${rows}</table>
+    <table><tr><th>₹ Cr</th><th>${esc(d.periods[0])}</th><th>${esc(d.periods[1])}</th><th>${esc(d.periods[2])}</th><th>YoY</th><th>QoQ</th></tr>${rows}</table>
     <div class="cfoot admin-only"><button class="edit" data-e="${esc(keyOf(d))}" title="Edit">✎</button><button class="del" data-k="${esc(keyOf(d))}" title="Remove">×</button></div>
   </div>`;
 }
@@ -333,7 +344,7 @@ function render() {
   else list.sort(byLatest);
 
   // One line under the tabs stating what the list contains and how it is ordered
-  const cmp = `${mode === "yoy" ? "YoY" : "QoQ"}: ${quarter || ""} vs ${prevQ(quarter, mode === "yoy" ? 4 : 1)}`;
+  const cmp = `YoY: ${quarter || ""} vs ${prevQ(quarter, 4)}`;
   const what = term ? "Search results across all companies"
     : ["All companies with " + (quarter || "") + " results",
        "Companies whose Net Profit grew (" + cmp + ")",
