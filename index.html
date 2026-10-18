@@ -152,6 +152,38 @@
   /* Turnaround text: full on desktop, short (L→P / P→L) on phones */
   .sh { display:none; }
   @media (max-width:520px) { .lg { display:none; } .sh { display:inline; } }
+
+  /* ===== Colourful cards (matches Concall Rythm) ===== */
+  body { background:#eef4fb linear-gradient(180deg, #e7f0fb 0, #f3f7fc 420px, #f6f8fb 100%) no-repeat; }
+  .card { border:1px solid #e1e7ef; border-top:4px solid var(--blue); border-radius:12px; padding:14px 16px 14px;
+          box-shadow:0 1px 3px rgba(17,24,39,.05), 0 6px 18px rgba(17,24,39,.05); }
+  .card.c-up { border-top-color:var(--green); }
+  .card.c-down { border-top-color:var(--down); }
+  .card:hover { box-shadow:0 10px 26px rgba(17,24,39,.10); }
+  .basis { border:none; font-weight:600; font-size:10.5px; padding:2px 9px; border-radius:10px; }
+  .basis.consolidated { background:#f1e9fe; color:#7c3aed; }
+  .basis.standalone { background:#e3f4f7; color:#0e7490; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:14px; font-size:12.5px; }
+  .badge::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .badge.up { background:#e3f5ea; } .badge.down { background:#fde8e8; } .badge.flat { background:#e6f0fa; color:var(--blue); }
+  .name { font-size:16px; margin:12px 0 12px; }
+  .tbox { background:linear-gradient(135deg, #eef5fd 0%, #eef8f2 100%); border-radius:10px; padding:10px 12px 6px; }
+  .tlabel { font-size:10.5px; font-weight:700; letter-spacing:.6px; color:var(--blue); margin-bottom:4px; }
+  .card th { border-bottom:1px solid #d6e2ee; color:#5b6b7f; }
+  .card th:first-child { color:#5b6b7f; }
+  .card td { border-bottom:1px solid rgba(17,24,39,.06); }
+  .card td:first-child { font-weight:500; color:#1f2937; }
+  .card td:nth-child(4) { color:#0b2545; }
+  .chip { display:inline-block; padding:2px 7px; border-radius:8px; font-weight:600; font-size:12px; white-space:nowrap; }
+  td.up .chip { background:#dff3e7; color:var(--green-ink); }
+  td.down .chip { background:#fde3e3; color:var(--down); }
+  td.flat .chip { background:#e8eef5; color:#4b5563; }
+  .tab.on .n { background:linear-gradient(90deg, var(--green), var(--blue)); }
+  .basisline { margin-bottom:4px; }
+  .abbr-key { font-size:11.5px; color:var(--muted); margin:0 0 16px; }
+  .abbr-key b { color:#374151; font-weight:600; }
+  .meta span { white-space:nowrap; }
+  @media (max-width:520px) { .tbox { padding:8px 8px 4px; } .chip { padding:1px 4px; font-size:11px; } }
 </style>
 </head>
 <body>
@@ -188,6 +220,7 @@
     </div>
   </div>
   <div class="basisline" id="basisline"></div>
+  <div class="abbr-key"><b>Key:</b> L→P Loss to Profit · P→L Profit to Loss · LR Loss Reduced · LW Loss Widened</div>
   <div class="grid" id="grid"></div>
   <div class="foot"><img src="logo.png" alt="price rythm">
     <div class="contact">
@@ -283,21 +316,26 @@ function bucket(d) {
 
 function card(d) {
   // All five columns: three quarters, then YoY and QoQ
-  const SHORT = { "loss→profit":"L→P", "profit→loss":"P→L", "negative→positive":"N→P", "positive→negative":"P→N" };
+  // Long growth labels are abbreviated in the table; the full text shows on hover and in the key above the cards.
+  const abbr = t => t.replace(/Loss\s*→\s*Profit/i, "L→P").replace(/Profit\s*→\s*Loss/i, "P→L")
+    .replace(/Negative\s*→\s*Positive/i, "N→P").replace(/Positive\s*→\s*Negative/i, "P→N")
+    .replace(/\s*Loss\s+Reduced/i, " LR").replace(/\s*Loss\s+Widened/i, " LW");
   const cell = g => {
-    const s = SHORT[g.text.toLowerCase().replace(/\s+/g, "")];
-    return `<td class="${gcls(g)}">${s ? `<span class="lg">${esc(g.text)}</span><span class="sh" title="${esc(g.text)}">${s}</span>` : esc(g.text)}</td>`;
+    const s = abbr(g.text);
+    return `<td class="${gcls(g)}"><span class="chip"${s !== g.text ? ` title="${esc(g.text)}"` : ""}>${esc(s)}</span></td>`;
   };
   const rows = ROWS.map(([label,key]) =>
     `<tr><td>${label}</td><td>${fmt(d[key][0])}</td><td>${fmt(d[key][1])}</td><td>${fmt(d[key][2])}</td>${cell(gOf(d, key, 0))}${cell(gOf(d, key, 1))}</tr>`).join("");
   const ng = gOf(d, "np", 0);
-  return `<div class="card">
+  const tone = gcls(ng) === "up" ? "c-up" : gcls(ng) === "down" ? "c-down" : "c-flat";
+  return `<div class="card ${tone}">
     <div class="chead">
-      <div class="meta"><span>${esc(d.date)}</span><span class="basis">${esc(d.basis)}</span></div>
-      <span class="badge ${gcls(ng)}" title="Net Profit growth (YoY)"><small>NP YoY</small>${esc(ng.text)}</span>
+      <div class="meta"><span>${esc(d.date)}</span><span class="basis ${esc(String(d.basis).toLowerCase())}">${esc(d.basis)}</span></div>
+      <span class="badge ${gcls(ng)}" title="Net Profit growth (YoY)"><small>NP YoY</small>${abbr(ng.text) !== ng.text ? `<span class="lg">${esc(ng.text)}</span><span class="sh">${esc(abbr(ng.text))}</span>` : esc(ng.text)}</span>
     </div>
     <div class="name">${esc(d.name)}</div>
-    <table><tr><th>₹ Cr</th><th>${esc(d.periods[0])}</th><th>${esc(d.periods[1])}</th><th>${esc(d.periods[2])}</th><th>YoY</th><th>QoQ</th></tr>${rows}</table>
+    <div class="tbox"><div class="tlabel">FINANCIALS (₹ CRORE)</div>
+    <table><tr><th></th><th>${esc(d.periods[0])}</th><th>${esc(d.periods[1])}</th><th>${esc(d.periods[2])}</th><th>YoY</th><th>QoQ</th></tr>${rows}</table></div>
     <div class="cfoot admin-only"><button class="edit" data-e="${esc(keyOf(d))}" title="Edit">✎</button><button class="del" data-k="${esc(keyOf(d))}" title="Remove">×</button></div>
   </div>`;
 }
